@@ -36,4 +36,6 @@ router.get("/list_all", [validateJWT], controller.list_all);
 
 router.get("/list_user", [validateJWT], controller.list_user);
 
+router.get("/last_adquires", [validateJWT], controller.last_adquires);
+
 module.exports = router;

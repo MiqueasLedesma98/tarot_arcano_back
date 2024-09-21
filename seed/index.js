@@ -10,6 +10,7 @@ const {
   Review,
   Questionnaire,
   Question,
+  Transaction,
 } = require("../models");
 
 const tags = require("./tags.json");
@@ -17,6 +18,7 @@ const users = require("./users.json");
 const services = require("./services.json");
 const reviews = require("./reviews.json");
 const questionnaire = require("./questionnaire.json");
+const transactions = require("./transactions.json");
 
 async function seedAll() {
   try {
@@ -31,6 +33,7 @@ async function seedAll() {
       User.deleteMany({}),
       Questionnaire.deleteMany({}),
       Question.deleteMany({}),
+      Transaction.deleteMany({}),
     ]);
 
     const new_reviews = [];
@@ -39,20 +42,21 @@ async function seedAll() {
     const new_users = [];
     const new_questionaires = [];
     const new_questions = [];
+    const new_transactions = [];
 
     tags.forEach((tag) => new_tags.push(new Tag(tag)));
 
     users.forEach((user) => new_users.push(new User(user)));
 
-    services.forEach((service) => {
-      const current = {
-        ...service,
-        user: new_users[service.user]._id,
-        tags: service.tags.map((tag) => new_tags[tag]._id),
-      };
-
-      new_services.push(new Service(current));
-    });
+    services.forEach((service) =>
+      new_services.push(
+        new Service({
+          ...service,
+          user: new_users[service.user]._id,
+          tags: service.tags.map((tag) => new_tags[tag]._id),
+        })
+      )
+    );
 
     questionnaire.forEach(({ questions, ...questionnaire }) => {
       const new_questionnaire = new Questionnaire(questionnaire);
@@ -67,14 +71,26 @@ async function seedAll() {
       new_questionaires.push(new_questionnaire);
     });
 
-    reviews.forEach((review) => {
-      const current = {
-        ...review,
-        service: new_services[review.service]._id,
-        user: new_users[review.user]._id,
-      };
-      new_reviews.push(new Review(current));
-    });
+    reviews.forEach((review) =>
+      new_reviews.push(
+        new Review({
+          ...review,
+          service: new_services[review.service]._id,
+          user: new_users[review.user]._id,
+        })
+      )
+    );
+
+    transactions.forEach((transaction) =>
+      new_transactions.push(
+        new Transaction({
+          ...transaction,
+          service: new_services[transaction.service]._id,
+          client: new_users[transaction.client]._id,
+          seller: new_users[transaction.seller]._id,
+        })
+      )
+    );
 
     await Promise.all(new_tags.map((tag) => tag.save()));
     console.log(`Se crearon ${new_tags.length} Tags`.bgGreen);
@@ -95,6 +111,11 @@ async function seedAll() {
 
     await Promise.all(new_questions.map((question) => question.save()));
     console.log(`Se crearon ${new_questions.length} Preguntas`.bgGreen);
+
+    await Promise.all(
+      new_transactions.map((transaction) => transaction.save())
+    );
+    console.log(`Se crearon ${new_transactions.length} transacciónes`.bgGreen);
 
     process.exit(0);
   } catch (error) {

@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Aplicación de tarot - 2024",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "dev": "nodemon app.js",
     "seed": "node ./seed"

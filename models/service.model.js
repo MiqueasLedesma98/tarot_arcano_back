@@ -1,4 +1,5 @@
 const { Schema, model } = require("mongoose");
+const Review = require("./review.model");
 
 const serviceSchema = new Schema(
   {
@@ -24,8 +25,18 @@ const serviceSchema = new Schema(
       type: [{ type: Schema.Types.ObjectId, ref: "Tag" }],
       default: [],
     },
+    img: { type: String },
   },
   { versionKey: false }
 );
+
+serviceSchema.method("getRate", function (cb) {
+  Review.distinct("rate", { service: this._id });
+});
+
+serviceSchema.virtual("rate").get(function () {
+  const rates = Review.distinct("rate", { service: this._id });
+  return rates.reduce((total, rate) => (total += rate), 0) / rates.length;
+});
 
 module.exports = model("Service", serviceSchema);

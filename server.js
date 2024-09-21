@@ -44,6 +44,8 @@ class Server {
 
     this.app.use(express.static(join(__dirname, "public")));
 
+    this.app.use("/app", express.static(join(__dirname, "dist")));
+
     this.app.use(morgan("tiny"));
   }
 

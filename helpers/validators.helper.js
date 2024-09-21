@@ -1,4 +1,4 @@
-const { User, Service } = require("../models");
+const { User, Service, Transaction } = require("../models");
 
 const regexPass = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
 
@@ -27,9 +27,23 @@ module.exports = {
   userNameExist: async (value = "") => {
     const user = await User.findOne({ userName: value.toLowerCase() }).lean();
     if (user) throw new Error("El nombre ya esta registrado");
+    return true;
   },
   serviceIsValid: async (value = "") => {
     const service = await Service.findById(value).lean();
     if (!service) throw new Error("El servicio no existe");
+    return true;
+  },
+  haveAdquiredTheService: async (req) => {
+    const exits = await Transaction.findOne({
+      client: req.uid,
+      service: req.params.id,
+    }).lean();
+    if (!exits)
+      throw new Error(
+        "No  puedes dejar una revision si no has adquirido el servicio"
+      );
+
+    return true;
   },
 };

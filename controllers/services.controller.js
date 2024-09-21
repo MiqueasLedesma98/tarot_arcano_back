@@ -1,4 +1,81 @@
-const { Service, User } = require("../models");
+const { Service, User, Transaction } = require("../models");
+
+const ServiceAggregation = ({ skip, limit, query }) => [
+  { $match: query },
+  {
+    $lookup: {
+      as: "tags",
+      from: "tags",
+      foreignField: "_id",
+      localField: "tags",
+      pipeline: [{ $project: { state: 0 } }],
+    },
+  },
+  {
+    $lookup: {
+      as: "user",
+      from: "users",
+      foreignField: "_id",
+      localField: "user",
+      pipeline: [
+        {
+          $project: {
+            state: 0,
+            email: 0,
+            role: 0,
+            password: 0,
+            google: 0,
+          },
+        },
+      ],
+    },
+  },
+  { $unwind: { path: "$user" } },
+  {
+    $lookup: {
+      from: "reviews",
+      localField: "_id",
+      foreignField: "service",
+      as: "rate",
+      pipeline: [
+        {
+          $group: {
+            _id: null,
+            rate: { $push: "$rate" },
+          },
+        },
+        {
+          $addFields: {
+            avgRate: {
+              $cond: {
+                if: { $lt: [{ $size: "$rate" }, 10] },
+                then: -1,
+                else: { $avg: "$rate" },
+              },
+            },
+          },
+        },
+        { $project: { _id: 0, avgRate: 1 } },
+      ],
+    },
+  },
+  {
+    $addFields: {
+      rate: {
+        $ifNull: [{ $arrayElemAt: ["$rate.avgRate", 0] }, -1],
+      },
+    },
+  },
+  {
+    $sort: { rate: -1 },
+  },
+  {
+    $skip: skip,
+  },
+  {
+    $limit: limit,
+  },
+];
 
 module.exports = {
   create: async (req, res, next) => {
@@ -53,14 +130,13 @@ module.exports = {
       }
       if (tags.length > 0) query.tags = { $in: tags };
 
-      const services = await Service.find(query)
-        .select("-state")
-        .skip((parseInt(page) - 1) * parseInt(limit))
-        .populate([
-          { path: "user", select: "-state -email -role -google -password" },
-          { path: "tags", select: "-state" },
-        ])
-        .lean({ virtuals: true });
+      const services = await Service.aggregate(
+        ServiceAggregation({
+          skip: (parseInt(page) - 1) * parseInt(limit),
+          limit,
+          query,
+        })
+      );
 
       return res.send(services);
     } catch (error) {
@@ -80,6 +156,31 @@ module.exports = {
         .lean({ virtuals: true });
 
       return res.send(services);
+    } catch (error) {
+      next(error);
+    }
+  },
+  last_adquires: async (req, res, next) => {
+    try {
+      const lastFiveIds = await Transaction.find({})
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select("service")
+        .lean({ virtuals: true });
+
+      const query = {
+        _id: { $in: lastFiveIds.map(({ service }) => service) },
+      };
+
+      const lastServices = await Service.aggregate(
+        ServiceAggregation({
+          limit: 5,
+          skip: 0,
+          query,
+        })
+      );
+
+      return res.send(lastServices);
     } catch (error) {
       next(error);
     }

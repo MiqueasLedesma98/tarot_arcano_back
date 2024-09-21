@@ -19,7 +19,7 @@ const transactionSchema = new Schema(
       required: [true, "El servicio es obligatorio"],
     },
   },
-  { versionKey: false }
+  { versionKey: false, timestamps: true }
 );
 
 module.exports = model("Transaction", transactionSchema);
