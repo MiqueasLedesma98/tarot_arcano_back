@@ -2,6 +2,7 @@ const { request } = require("express");
 const jwt = require("jsonwebtoken");
 
 const { User } = require("../models");
+const { Socket } = require("socket.io");
 
 module.exports = {
   validateJWT: async (req = request, res, next) => {
@@ -41,5 +42,28 @@ module.exports = {
     if (req.user.role !== "ADMIN")
       return res.status(401).json({ msg: "No autorizado" });
     next();
+  },
+  WSAuth: async (socket = new Socket(), next) => {
+    try {
+      const token = socket.handshake.auth["x-token"];
+
+      if (!token) return next();
+
+      const { uid } = jwt.verify(token, process.env.SECRET_KEY);
+
+      const user = await User.findById(uid).select("-password").lean();
+
+      socket.uid = user._id;
+      socket.user = user;
+
+      next();
+    } catch (error) {
+      console.error(error);
+
+      socket.uid = null;
+      socket.user = null;
+
+      next();
+    }
   },
 };

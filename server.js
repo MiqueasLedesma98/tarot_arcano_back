@@ -6,7 +6,7 @@ const fileUpload = require("express-fileupload");
 const morgan = require("morgan");
 const routes = require("./routes");
 
-const { httpErrors } = require("./middlewares");
+const { httpErrors, WSAuth } = require("./middlewares");
 const { httpServer, app, io } = require("./config");
 
 class Server {
@@ -38,6 +38,8 @@ class Server {
     this.app.use(
       fileUpload({
         createParentPath: true,
+        useTempFiles: true,
+        tempFileDir: "./uploads/temp",
         limits: { fileSize: 50 * 1024 * 1024 }, // 50mb
       })
     );
@@ -68,7 +70,11 @@ class Server {
   }
 
   setupSockets() {
-    io.on("connection", (socket) => {});
+    io.use(WSAuth);
+
+    io.on("connection", (socket) => {
+      if (socket.uid) socket.join(socket.uid);
+    });
   }
 
   listen() {

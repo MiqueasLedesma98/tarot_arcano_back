@@ -39,11 +39,7 @@ module.exports = {
       client: req.uid,
       service: req.params.id,
     }).lean();
-    if (!exits)
-      throw new Error(
-        "No  puedes dejar una revision si no has adquirido el servicio"
-      );
-
+    if (!exits) throw new Error("No has adquerido el servicio");
     return true;
   },
 };

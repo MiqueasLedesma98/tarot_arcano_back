@@ -1,6 +1,7 @@
 module.exports = {
   ...require("./db"),
+  ...require("./firebase"),
   ...require("./nodemailer"),
-  ...require("./socket"),
   ...require("./openia"),
+  ...require("./socket"),
 };

@@ -24,12 +24,15 @@ module.exports = {
         response = await OpenAIClient.chat.completions.create(params);
       } catch (error) {
         console.error(error);
-        response = "No disponible, intente nuevamente mas adelante";
+        response = null;
       }
 
       return res.send({
         msg: "OK",
-        response: response?.data?.choices[0]?.message?.content ?? response,
+        data: response,
+        response:
+          response?.choices[0].message.content ??
+          "No disponible, intente nuevamente mas adelante",
       });
     } catch (error) {
       next(error);

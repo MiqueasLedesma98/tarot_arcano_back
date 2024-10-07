@@ -18,6 +18,10 @@ const transactionSchema = new Schema(
       ref: "Service",
       required: [true, "El servicio es obligatorio"],
     },
+    paypal_id: {
+      type: String,
+      required: true,
+    },
   },
   { versionKey: false, timestamps: true }
 );
